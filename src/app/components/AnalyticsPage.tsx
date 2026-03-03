@@ -2,16 +2,27 @@ import { useState, useEffect, useMemo } from "react";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
-import { 
+import {
   TrendingUp, TrendingDown, Calendar, Award, AlertCircle, Sparkles, Loader2
 } from "lucide-react";
-import { 
+import {
   BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
 } from 'recharts';
 import { categories } from "../data/mockData";
 import { getTransactions, getBudgets } from "../../api/services";
 
-export function AnalyticsPage() {
+interface AnalyticsPageProps {
+  userMode?: string;
+}
+
+export function AnalyticsPage({ userMode = 'student' }: AnalyticsPageProps) {
+  const isEmployee = userMode === 'employee';
+  const headerGradient = isEmployee ? 'from-blue-500 to-cyan-500' : 'from-purple-500 to-blue-500';
+  const headerLight = isEmployee ? 'text-blue-100' : 'text-purple-100';
+  const spinnerColor = isEmployee ? 'text-blue-600' : 'text-purple-600';
+  const barColor = isEmployee ? '#3b82f6' : '#8b5cf6';
+  const barLightColor = isEmployee ? '#bfdbfe' : '#e9d5ff';
+
   const [transactions, setTransactions] = useState<any[]>([]);
   const [totalBudget, setTotalBudget] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -23,8 +34,7 @@ export function AnalyticsPage() {
           getTransactions(),
           getBudgets()
         ]);
-        
-        // ✅ FIX: Strict Data Safety
+
         setTransactions(Array.isArray(transRes.data) ? transRes.data : []);
         const total = (Array.isArray(budgetRes.data) ? budgetRes.data : []).reduce((sum: number, b: any) => sum + (Number(b.amount) || 0), 0);
         setTotalBudget(total);
@@ -37,14 +47,13 @@ export function AnalyticsPage() {
     fetchData();
   }, []);
 
-  const { 
-    categoryData, monthlyComparison, topCategories, 
+  const {
+    categoryData, monthlyComparison, topCategories,
     percentageChange, isSpendingLess, avgSpending, bestMonth
   } = useMemo(() => {
-    // ✅ FIX: Strict Zero Return if empty
-    if (!transactions || transactions.length === 0) return { 
-      categoryData: [], monthlyComparison: [], topCategories: [], 
-      percentageChange: 0, isSpendingLess: true, avgSpending: 0, bestMonth: "-" 
+    if (!transactions || transactions.length === 0) return {
+      categoryData: [], monthlyComparison: [], topCategories: [],
+      percentageChange: 0, isSpendingLess: true, avgSpending: 0, bestMonth: "-"
     };
 
     const now = new Date();
@@ -89,14 +98,14 @@ export function AnalyticsPage() {
         budget: totalBudget
       }));
 
-    const pChange = lastMonthSpent > 0 
-      ? ((thisMonthSpent - lastMonthSpent) / lastMonthSpent) * 100 
+    const pChange = lastMonthSpent > 0
+      ? ((thisMonthSpent - lastMonthSpent) / lastMonthSpent) * 100
       : 0;
-    
+
     const totalSpentAllTime = Object.values(monthMap).reduce((a, b) => a + b, 0);
     const numberOfMonths = Object.keys(monthMap).length || 1;
-    const sortedMonths = Object.entries(monthMap).sort(([,a], [,b]) => a - b);
-    
+    const sortedMonths = Object.entries(monthMap).sort(([, a], [, b]) => a - b);
+
     return {
       categoryData: formattedCatData,
       monthlyComparison: formattedMonthlyData,
@@ -108,22 +117,24 @@ export function AnalyticsPage() {
     };
   }, [transactions, totalBudget]);
 
-  const COLORS = ['#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#14b8a6', '#64748b'];
+  const COLORS = isEmployee
+    ? ['#3b82f6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#14b8a6', '#64748b']
+    : ['#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#14b8a6', '#64748b'];
 
   if (loading) {
-    return <div className="flex h-[50vh] items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-purple-600" /></div>;
+    return <div className="flex h-[50vh] items-center justify-center"><Loader2 className={`w-8 h-8 animate-spin ${spinnerColor}`} /></div>;
   }
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      <Card className="p-6 bg-gradient-to-br from-purple-500 to-blue-500 text-white border-0 shadow-xl">
+      <Card className={`p-6 bg-gradient-to-br ${headerGradient} text-white border-0 shadow-xl`}>
         <div className="flex items-start justify-between mb-6">
           <div>
-            <p className="text-purple-100 text-sm mb-2">vs Last Month</p>
+            <p className={`${headerLight} text-sm mb-2`}>vs Last Month</p>
             <h2 className="text-4xl font-bold">
               {isSpendingLess ? "-" : "+"}{percentageChange}%
             </h2>
-            <p className="text-purple-100 text-sm mt-2">
+            <p className={`${headerLight} text-sm mt-2`}>
               {transactions.length === 0 ? "No data yet. Start spending!" : isSpendingLess ? "You spent less this month! 🎉" : "Spending increased slightly ⚠️"}
             </p>
           </div>
@@ -135,23 +146,21 @@ export function AnalyticsPage() {
 
       <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card className="p-6 bg-white/80 dark:bg-gray-800 backdrop-blur-sm border-0 shadow-lg dark:border-gray-700">
-           <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Best Month</h3>
-           <p className="text-sm text-gray-600 dark:text-gray-400">{bestMonth === "-" ? "No Data" : bestMonth}</p>
+          <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Best Month</h3>
+          <p className="text-sm text-gray-600 dark:text-gray-400">{bestMonth === "-" ? "No Data" : bestMonth}</p>
         </Card>
         <Card className="p-6 bg-white/80 dark:bg-gray-800 backdrop-blur-sm border-0 shadow-lg dark:border-gray-700">
-           <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Top Spending</h3>
-           <p className="text-sm text-gray-600 dark:text-gray-400">
-             {topCategories[0]?.name || "None"} - ₹{topCategories[0]?.value.toLocaleString() || 0}
-           </p>
+          <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Top Spending</h3>
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            {topCategories[0]?.name || "None"} - ₹{topCategories[0]?.value.toLocaleString() || 0}
+          </p>
         </Card>
         <Card className="p-6 bg-white/80 dark:bg-gray-800 backdrop-blur-sm border-0 shadow-lg dark:border-gray-700">
-           <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Monthly Avg</h3>
-           <p className="text-sm text-gray-600 dark:text-gray-400">₹{avgSpending.toLocaleString()}</p>
+          <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Monthly Avg</h3>
+          <p className="text-sm text-gray-600 dark:text-gray-400">₹{avgSpending.toLocaleString()}</p>
         </Card>
       </div>
 
-      {/* Charts logic stays same... */}
-      {/* (Rest of the file is standard, charts will render empty data safely) */}
       <div className="grid lg:grid-cols-2 gap-6">
         <Card className="p-6 bg-white/80 dark:bg-gray-800 backdrop-blur-sm border-0 shadow-lg transition-colors dark:border-gray-700">
           <div className="flex items-center justify-between mb-6">
@@ -161,7 +170,7 @@ export function AnalyticsPage() {
               All Time
             </Button>
           </div>
-          
+
           <ResponsiveContainer width="100%" height={300}>
             {categoryData.length > 0 ? (
               <PieChart>
@@ -178,7 +187,7 @@ export function AnalyticsPage() {
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip 
+                <Tooltip
                   contentStyle={{ backgroundColor: '#1F2937', borderColor: '#374151', color: '#fff' }}
                 />
               </PieChart>
@@ -199,13 +208,13 @@ export function AnalyticsPage() {
               <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
               <XAxis dataKey="month" stroke="#9CA3AF" />
               <YAxis stroke="#9CA3AF" />
-              <Tooltip 
-                cursor={{fill: 'transparent'}}
+              <Tooltip
+                cursor={{ fill: 'transparent' }}
                 contentStyle={{ backgroundColor: '#1F2937', borderColor: '#374151', color: '#fff' }}
               />
               <Legend />
-              <Bar dataKey="spent" fill="#8b5cf6" name="Spent" radius={[8, 8, 0, 0]} />
-              <Bar dataKey="budget" fill="#e9d5ff" name="Budget" radius={[8, 8, 0, 0]} />
+              <Bar dataKey="spent" fill={barColor} name="Spent" radius={[8, 8, 0, 0]} />
+              <Bar dataKey="budget" fill={barLightColor} name="Budget" radius={[8, 8, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </Card>

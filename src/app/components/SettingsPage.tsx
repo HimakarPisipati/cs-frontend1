@@ -5,16 +5,18 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Switch } from "./ui/switch";
 import {
-  User, Bell, Palette, Lock, Download, Trash2, Moon, Sun, X, AlertTriangle, ShieldCheck, KeyRound
+  User, Bell, Palette, Lock, Download, Trash2, Moon, Sun, X, AlertTriangle, ShieldCheck, KeyRound, Briefcase, GraduationCap
 } from "lucide-react";
 // ✅ Import updateProfile here
-import { changePassword, deleteAccount, updateProfile, getUserProfile, forgotPassword, resetPassword } from "../../api/services";
+import { changePassword, deleteAccount, updateProfile, getUserProfile, forgotPassword, resetPassword, switchMode } from "../../api/services";
 
 interface SettingsPageProps {
   onNavigate: (page: string) => void;
+  userMode?: string;
+  onModeChange?: (mode: string) => void;
 }
 
-export function SettingsPage({ onNavigate }: SettingsPageProps) {
+export function SettingsPage({ onNavigate, userMode = 'student', onModeChange }: SettingsPageProps) {
   // --- THEME STATE ---
   const [darkMode, setDarkMode] = useState(() => {
     if (typeof window !== "undefined") return localStorage.getItem("theme") === "dark";
@@ -39,6 +41,12 @@ export function SettingsPage({ onNavigate }: SettingsPageProps) {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [deleteConfirmationPassword, setDeleteConfirmationPassword] = useState("");
+
+  // Mode switch warning state
+  const [showModeSwitchModal, setShowModeSwitchModal] = useState(false);
+  const [pendingMode, setPendingMode] = useState<string | null>(null);
+  const [switchConfirmText, setSwitchConfirmText] = useState("");
+  const [switchLoading, setSwitchLoading] = useState(false);
   const [loading, setLoading] = useState(false);
 
   // --- FORGOT PASSWORD (OTP) STATE ---
@@ -60,6 +68,11 @@ export function SettingsPage({ onNavigate }: SettingsPageProps) {
         setName(data.name || "");
         setEmail(data.email || "");
         setPhone(data.phone || "");
+
+        // Sync user mode from backend
+        if (data.userMode && onModeChange) {
+          onModeChange(data.userMode);
+        }
 
         // Optional: Update local storage to keep it in sync
         localStorage.setItem("user", JSON.stringify(data));
@@ -254,7 +267,7 @@ export function SettingsPage({ onNavigate }: SettingsPageProps) {
       {/* 1. Profile Settings Card */}
       <Card className="p-6 bg-white/80 dark:bg-gray-800 backdrop-blur-sm border-0 shadow-lg transition-colors">
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
+          <div className={`w-12 h-12 bg-gradient-to-br ${userMode === 'employee' ? 'from-blue-500 to-cyan-500' : 'from-purple-500 to-blue-500'} rounded-full flex items-center justify-center`}>
             <User className="w-6 h-6 text-white" />
           </div>
           <div>
@@ -292,7 +305,7 @@ export function SettingsPage({ onNavigate }: SettingsPageProps) {
           <Button
             onClick={handleSaveProfile}
             disabled={loading}
-            className="bg-gradient-to-r from-purple-600 to-blue-600 text-white"
+            className={`bg-gradient-to-r ${userMode === 'employee' ? 'from-blue-600 to-cyan-600' : 'from-purple-600 to-blue-600'} text-white`}
           >
             {loading ? "Saving..." : "Save Changes"}
           </Button>
@@ -315,7 +328,7 @@ export function SettingsPage({ onNavigate }: SettingsPageProps) {
           {/* Dark Mode Toggle */}
           <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-xl transition-colors">
             <div className="flex items-center gap-3">
-              {darkMode ? <Moon className="w-5 h-5 text-purple-400" /> : <Sun className="w-5 h-5 text-orange-500" />}
+              {darkMode ? <Moon className={`w-5 h-5 ${userMode === 'employee' ? 'text-blue-400' : 'text-purple-400'}`} /> : <Sun className="w-5 h-5 text-orange-500" />}
               <div>
                 <p className="font-medium text-gray-900 dark:text-white">Dark Mode</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">Switch between light and dark theme</p>
@@ -338,6 +351,56 @@ export function SettingsPage({ onNavigate }: SettingsPageProps) {
         </div>
       </Card>
 
+      {/* 2.5 Mode Switch Card */}
+      <Card className="p-6 bg-white/80 dark:bg-gray-800 backdrop-blur-sm border-0 shadow-lg transition-colors">
+        <div className="flex items-center gap-3 mb-6">
+          <div className={`w-12 h-12 rounded-full flex items-center justify-center ${userMode === 'employee' ? 'bg-gradient-to-br from-blue-500 to-cyan-500' : 'bg-gradient-to-br from-purple-500 to-blue-500'}`}>
+            {userMode === 'employee' ? <Briefcase className="w-6 h-6 text-white" /> : <GraduationCap className="w-6 h-6 text-white" />}
+          </div>
+          <div>
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-white">User Mode</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400">Switch between Student and Employee mode</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            onClick={() => {
+              if (userMode === 'student') return; // already student
+              setPendingMode('student');
+              setShowModeSwitchModal(true);
+            }}
+            className={`p-4 rounded-xl border-2 transition-all flex items-center gap-3 ${userMode === 'student'
+              ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/30'
+              : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
+              }`}
+          >
+            <GraduationCap className={`w-6 h-6 ${userMode === 'student' ? 'text-purple-600 dark:text-purple-400' : 'text-gray-400'}`} />
+            <div className="text-left">
+              <p className={`font-semibold ${userMode === 'student' ? 'text-purple-700 dark:text-purple-300' : 'text-gray-600 dark:text-gray-400'}`}>Student</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Pocket money, campus life</p>
+            </div>
+          </button>
+
+          <button
+            onClick={() => {
+              if (userMode === 'employee') return; // already employee
+              setPendingMode('employee');
+              setShowModeSwitchModal(true);
+            }}
+            className={`p-4 rounded-xl border-2 transition-all flex items-center gap-3 ${userMode === 'employee'
+              ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30'
+              : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
+              }`}
+          >
+            <Briefcase className={`w-6 h-6 ${userMode === 'employee' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400'}`} />
+            <div className="text-left">
+              <p className={`font-semibold ${userMode === 'employee' ? 'text-blue-700 dark:text-blue-300' : 'text-gray-600 dark:text-gray-400'}`}>Employee</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Salary, tax & deductions</p>
+            </div>
+          </button>
+        </div>
+      </Card>
       {/* 3. Security Section */}
       <Card className="p-6 bg-white/80 dark:bg-gray-800 backdrop-blur-sm border-0 shadow-lg transition-colors">
         <div className="flex items-center gap-3 mb-6">
@@ -364,7 +427,7 @@ export function SettingsPage({ onNavigate }: SettingsPageProps) {
       {/* 4. Data & Privacy Section */}
       <Card className="p-6 bg-white/80 dark:bg-gray-800 backdrop-blur-sm border-0 shadow-lg transition-colors">
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full flex items-center justify-center">
+          <div className={`w-12 h-12 bg-gradient-to-br ${userMode === 'employee' ? 'from-blue-500 to-cyan-500' : 'from-indigo-500 to-purple-500'} rounded-full flex items-center justify-center`}>
             <Download className="w-6 h-6 text-white" />
           </div>
           <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Data & Privacy</h3>
@@ -435,7 +498,7 @@ export function SettingsPage({ onNavigate }: SettingsPageProps) {
                   <button
                     onClick={handleStartForgotPassword}
                     disabled={loading}
-                    className="w-full flex items-center justify-center gap-2 text-sm text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 font-medium py-2"
+                    className={`w-full flex items-center justify-center gap-2 text-sm ${userMode === 'employee' ? 'text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300' : 'text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300'} font-medium py-2`}
                   >
                     <KeyRound className="w-4 h-4" />
                     {loading ? "Sending OTP..." : "Forgot Password? Reset via OTP"}
@@ -448,12 +511,12 @@ export function SettingsPage({ onNavigate }: SettingsPageProps) {
             {forgotMode && forgotStep === "otp" && (
               <>
                 <div className="text-center mb-6">
-                  <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-blue-500 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                  <div className={`w-14 h-14 bg-gradient-to-br ${userMode === 'employee' ? 'from-blue-500 to-cyan-500' : 'from-purple-500 to-blue-500'} rounded-2xl flex items-center justify-center mx-auto mb-3`}>
                     <ShieldCheck className="w-7 h-7 text-white" />
                   </div>
                   <h3 className="text-xl font-bold text-gray-900 dark:text-white">Enter verification code</h3>
                   <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">We sent a 6-digit code to</p>
-                  <p className="text-sm font-semibold text-purple-600 dark:text-purple-400">{email}</p>
+                  <p className={`text-sm font-semibold ${userMode === 'employee' ? 'text-blue-600 dark:text-blue-400' : 'text-purple-600 dark:text-purple-400'}`}>{email}</p>
                 </div>
 
                 <div className="flex justify-center gap-2 mb-6">
@@ -467,9 +530,9 @@ export function SettingsPage({ onNavigate }: SettingsPageProps) {
                       value={digit}
                       onChange={(e) => handleOtpChange(index, e.target.value)}
                       onKeyDown={(e) => handleOtpKeyDown(index, e)}
-                      className="w-11 h-13 text-center text-lg font-bold border-2 border-gray-200 dark:border-gray-600 rounded-xl 
-                        focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all
-                        bg-gray-50 dark:bg-gray-700 dark:text-white hover:bg-white dark:hover:bg-gray-600"
+                      className={`w-11 h-13 text-center text-lg font-bold border-2 border-gray-200 dark:border-gray-600 rounded-xl 
+                        ${userMode === 'employee' ? 'focus:border-blue-500 focus:ring-2 focus:ring-blue-200' : 'focus:border-purple-500 focus:ring-2 focus:ring-purple-200'} outline-none transition-all
+                        bg-gray-50 dark:bg-gray-700 dark:text-white hover:bg-white dark:hover:bg-gray-600`}
                       autoFocus={index === 0}
                     />
                   ))}
@@ -481,7 +544,7 @@ export function SettingsPage({ onNavigate }: SettingsPageProps) {
                     setForgotStep("newPassword");
                   }}
                   disabled={otp.join("").length !== 6}
-                  className="w-full h-11 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 mb-3"
+                  className={`w-full h-11 bg-gradient-to-r ${userMode === 'employee' ? 'from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700' : 'from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700'} mb-3`}
                 >
                   Verify Code
                 </Button>
@@ -492,7 +555,7 @@ export function SettingsPage({ onNavigate }: SettingsPageProps) {
                     {resendCooldown > 0 ? (
                       <span className="text-gray-400">Resend in {resendCooldown}s</span>
                     ) : (
-                      <button onClick={handleResendForgotOtp} className="text-purple-600 dark:text-purple-400 hover:text-purple-700 font-semibold">Resend OTP</button>
+                      <button onClick={handleResendForgotOtp} className={`${userMode === 'employee' ? 'text-blue-600 dark:text-blue-400 hover:text-blue-700' : 'text-purple-600 dark:text-purple-400 hover:text-purple-700'} font-semibold`}>Resend OTP</button>
                     )}
                   </p>
                 </div>
@@ -540,11 +603,87 @@ export function SettingsPage({ onNavigate }: SettingsPageProps) {
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Password Reset!</h3>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">Your password has been updated successfully.</p>
-                <Button onClick={closeForgotPassword} className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700">
+                <Button onClick={closeForgotPassword} className={`w-full bg-gradient-to-r ${userMode === 'employee' ? 'from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700' : 'from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700'}`}>
                   Done
                 </Button>
               </div>
             )}
+          </Card>
+        </div>
+      )}
+
+      {/* 🔹 MODE SWITCH WARNING MODAL */}
+      {showModeSwitchModal && pendingMode && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+          <Card className="w-full max-w-md bg-white dark:bg-gray-800 p-6 shadow-2xl relative border-2 border-orange-200 dark:border-orange-900">
+            <button
+              onClick={() => { setShowModeSwitchModal(false); setPendingMode(null); setSwitchConfirmText(""); }}
+              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-3 mb-4 text-orange-600 dark:text-orange-400">
+              <AlertTriangle className="w-8 h-8" />
+              <h3 className="text-xl font-bold">Switch to {pendingMode === 'employee' ? 'Employee' : 'Student'} Mode?</h3>
+            </div>
+
+            <div className="space-y-3 mb-5">
+              <p className="text-gray-600 dark:text-gray-300 text-sm">
+                Switching modes will <strong className="text-red-600 dark:text-red-400">permanently delete</strong> all your current data:
+              </p>
+              <ul className="text-sm text-gray-500 dark:text-gray-400 space-y-1 list-disc list-inside bg-red-50 dark:bg-red-900/20 rounded-xl p-4 border border-red-100 dark:border-red-900">
+                <li>All transactions</li>
+                <li>All budgets</li>
+                <li>All savings goals</li>
+                <li>All {userMode === 'student' ? 'dues' : 'EMI / loan entries'}</li>
+                {userMode === 'employee' && <li>All salary entries</li>}
+              </ul>
+              <p className="text-sm text-gray-600 dark:text-gray-300">
+                This action <strong>cannot be undone</strong>. Type <code className="bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded font-mono text-red-600 dark:text-red-400">SWITCH</code> to confirm.
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <Input
+                placeholder='Type "SWITCH" to confirm'
+                value={switchConfirmText}
+                onChange={(e) => setSwitchConfirmText(e.target.value)}
+                className="dark:bg-gray-700 dark:text-white border-orange-200 dark:border-orange-900 focus:ring-orange-500"
+              />
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => { setShowModeSwitchModal(false); setPendingMode(null); setSwitchConfirmText(""); }}
+                  className="flex-1 dark:bg-gray-700 dark:text-white dark:border-gray-600"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={async () => {
+                    if (switchConfirmText !== 'SWITCH') return alert('Please type "SWITCH" to confirm');
+                    setSwitchLoading(true);
+                    try {
+                      await switchMode({ newMode: pendingMode });
+                      if (onModeChange) onModeChange(pendingMode);
+                      localStorage.setItem('userMode', pendingMode);
+                      setShowModeSwitchModal(false);
+                      setPendingMode(null);
+                      setSwitchConfirmText("");
+                      alert(`✅ Switched to ${pendingMode === 'employee' ? 'Employee' : 'Student'} mode! All previous data has been cleared.`);
+                    } catch (err: any) {
+                      alert(err?.response?.data?.message || 'Failed to switch mode ❌');
+                    } finally {
+                      setSwitchLoading(false);
+                    }
+                  }}
+                  disabled={switchLoading || switchConfirmText !== 'SWITCH'}
+                  className="flex-1 bg-orange-600 hover:bg-orange-700 text-white disabled:opacity-50"
+                >
+                  {switchLoading ? 'Switching...' : '⚠️ Switch & Delete Data'}
+                </Button>
+              </div>
+            </div>
           </Card>
         </div>
       )}

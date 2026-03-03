@@ -4,19 +4,32 @@ import { Card } from "./ui/card";
 import { Progress } from "./ui/progress";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import { 
+import {
   Plus, Wallet, AlertCircle, Pencil, Trash2, X, Save
 } from "lucide-react";
 
 // ✅ Import API services
 import { getBudgets, addBudget, updateBudget, deleteBudget, getTransactions } from "../../api/services";
 
-export function BudgetsPage() {
+interface BudgetsPageProps {
+  userMode?: string;
+}
+
+export function BudgetsPage({ userMode = 'student' }: BudgetsPageProps) {
+  const isEmployee = userMode === 'employee';
+  const gradient = isEmployee ? 'from-blue-600 to-cyan-600' : 'from-purple-600 to-blue-600';
+  const gradientHover = isEmployee ? 'from-blue-700 to-cyan-700' : 'from-purple-700 to-blue-700';
+  const accentText = isEmployee ? 'text-blue-600 dark:text-blue-400' : 'text-purple-600 dark:text-purple-400';
+  const accentBg = isEmployee ? 'bg-blue-100 dark:bg-blue-900/30' : 'bg-purple-100 dark:bg-purple-900/30';
+  const accentLight = isEmployee ? 'text-blue-100' : 'text-purple-100';
+  const btnWhiteText = isEmployee ? 'text-blue-600' : 'text-purple-600';
+  const progressBg = isEmployee ? 'bg-blue-800' : 'bg-purple-800';
+
   const [budgets, setBudgets] = useState<any[]>([]);
   // ✅ Initialize as empty array
   const [transactions, setTransactions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  
+
   // Modal State
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -33,11 +46,11 @@ export function BudgetsPage() {
         getBudgets(),
         getTransactions()
       ]);
-      
+
       // ✅ FIX: Strict type checking to prevent crashes
       setBudgets(Array.isArray(budgetRes.data) ? budgetRes.data : []);
       setTransactions(Array.isArray(transRes.data) ? transRes.data : []);
-      
+
     } catch (error) {
       console.error("Failed to load budgets", error);
     } finally {
@@ -52,7 +65,7 @@ export function BudgetsPage() {
   // ✅ CALCULATE SPENDING MANUALLY (Fixes Ghost Data)
   const getCategorySpending = (catName: string) => {
     if (!transactions || transactions.length === 0) return 0;
-    
+
     return transactions
       .filter(t => t.type === 'expense' && t.category === catName)
       .reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
@@ -106,36 +119,36 @@ export function BudgetsPage() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      <Card className="p-6 bg-gradient-to-r from-purple-600 to-blue-600 text-white border-0 shadow-xl">
+      <Card className={`p-6 bg-gradient-to-r ${gradient} text-white border-0 shadow-xl`}>
         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
           <div>
             <h2 className="text-3xl font-bold">Monthly Budgets</h2>
-            <p className="text-purple-100 mt-1">
+            <p className={`${accentLight} mt-1`}>
               Total: ₹{totalSpent.toLocaleString()} / ₹{totalBudgetLimit.toLocaleString()}
             </p>
           </div>
-          <Button 
+          <Button
             onClick={() => {
               setEditingId(null);
               setCategory("Food");
               setLimit("");
               setShowAddModal(true);
             }}
-            className="bg-white text-purple-600 hover:bg-gray-100 border-0"
+            className={`bg-white ${btnWhiteText} hover:bg-gray-100 border-0`}
           >
             <Plus className="w-4 h-4 mr-2" />
             Set New Budget
           </Button>
         </div>
-        
+
         <div className="mt-6">
           <div className="flex justify-between text-sm mb-2">
             <span>Total Usage</span>
             <span>{totalBudgetLimit > 0 ? Math.round((totalSpent / totalBudgetLimit) * 100) : 0}%</span>
           </div>
-          <Progress 
-            value={totalBudgetLimit > 0 ? (totalSpent / totalBudgetLimit) * 100 : 0} 
-            className="h-3 bg-purple-800" 
+          <Progress
+            value={totalBudgetLimit > 0 ? (totalSpent / totalBudgetLimit) * 100 : 0}
+            className={`h-3 ${progressBg}`}
           />
         </div>
       </Card>
@@ -167,8 +180,8 @@ export function BudgetsPage() {
                 </div>
 
                 <div className="flex items-center gap-4 mb-4">
-                  <div className="w-12 h-12 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-2xl">
-                    <Wallet className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+                  <div className={`w-12 h-12 rounded-xl ${accentBg} flex items-center justify-center text-2xl`}>
+                    <Wallet className={`w-6 h-6 ${accentText}`} />
                   </div>
                   <div>
                     <h3 className="font-bold text-lg">{budget.category}</h3>
@@ -179,8 +192,8 @@ export function BudgetsPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Progress 
-                    value={percentage} 
+                  <Progress
+                    value={percentage}
                     className={`h-2 ${isOver ? "bg-red-100" : "bg-gray-100"} dark:bg-gray-700`}
                   />
                   <div className="flex items-center justify-between text-xs font-medium">
@@ -208,7 +221,7 @@ export function BudgetsPage() {
             <div className="space-y-4">
               <div>
                 <Label className="dark:text-gray-300">Category</Label>
-                <select 
+                <select
                   className="w-full mt-1 p-3 rounded-md border bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
@@ -220,8 +233,8 @@ export function BudgetsPage() {
               </div>
               <div>
                 <Label className="dark:text-gray-300">Budget Limit (₹)</Label>
-                <Input 
-                  type="number" 
+                <Input
+                  type="number"
                   placeholder="e.g. 5000"
                   value={limit}
                   onChange={(e) => setLimit(e.target.value)}
@@ -229,7 +242,7 @@ export function BudgetsPage() {
                 />
               </div>
               <div className="pt-4 flex gap-3">
-                <Button onClick={handleSaveBudget} className="flex-1 bg-gradient-to-r from-purple-600 to-blue-600 text-white">
+                <Button onClick={handleSaveBudget} className={`flex-1 bg-gradient-to-r ${gradient} text-white`}>
                   <Save className="w-4 h-4 mr-2" />
                   Save Budget
                 </Button>

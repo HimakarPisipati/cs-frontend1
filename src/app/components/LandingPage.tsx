@@ -13,7 +13,11 @@ import {
   ArrowRight,
   Star,
   Sun,
-  Moon
+  Moon,
+  Briefcase,
+  GraduationCap,
+  DollarSign,
+  BarChart3
 } from "lucide-react";
 
 interface LandingPageProps {
@@ -25,6 +29,15 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
     return document.documentElement.classList.contains("dark") ||
       localStorage.getItem("theme") === "dark";
   });
+  const [landingMode, setLandingMode] = useState<'student' | 'employee'>(() => {
+    return (localStorage.getItem('landingMode') as 'student' | 'employee') || 'student';
+  });
+  const isEmp = landingMode === 'employee';
+
+  const updateLandingMode = (mode: 'student' | 'employee') => {
+    setLandingMode(mode);
+    localStorage.setItem('landingMode', mode);
+  };
 
   useEffect(() => {
     if (isDark) {
@@ -36,7 +49,7 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
     }
   }, [isDark]);
 
-  const features = [
+  const studentFeatures = [
     {
       icon: <Wallet className="w-8 h-8 text-purple-500" />,
       title: "Smart Budgets",
@@ -58,6 +71,31 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
       description: "Export your expense reports for sharing or personal records"
     }
   ];
+
+  const employeeFeatures = [
+    {
+      icon: <DollarSign className="w-8 h-8 text-blue-500" />,
+      title: "Salary Tracker",
+      description: "Track your monthly salary, deductions, PF, and net take-home pay"
+    },
+    {
+      icon: <BarChart3 className="w-8 h-8 text-cyan-500" />,
+      title: "Tax & Deductions",
+      description: "Monitor your tax, insurance, and PF deductions month by month"
+    },
+    {
+      icon: <Target className="w-8 h-8 text-green-500" />,
+      title: "EMI Manager",
+      description: "Track home loans, car loans, and education EMIs in one place"
+    },
+    {
+      icon: <FileText className="w-8 h-8 text-orange-500" />,
+      title: "Financial Reports",
+      description: "Generate and export detailed salary and expense reports as PDF"
+    }
+  ];
+
+  const features = isEmp ? employeeFeatures : studentFeatures;
 
   const testimonials = [
     {
@@ -87,27 +125,50 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-green-50 dark:from-gray-900 dark:via-gray-950 dark:to-gray-900 transition-colors duration-300">
+    <div className={`min-h-screen bg-gradient-to-br ${isEmp ? 'from-blue-50 via-cyan-50 to-green-50' : 'from-purple-50 via-blue-50 to-green-50'} dark:from-gray-900 dark:via-gray-950 dark:to-gray-900 transition-colors duration-300`}>
       {/* Navbar */}
       <nav className="sticky top-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg border-b border-gray-200 dark:border-gray-800 transition-colors">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center gap-2">
-              <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-blue-500 rounded-xl flex items-center justify-center">
+              <div className={`w-10 h-10 bg-gradient-to-br ${isEmp ? 'from-blue-500 to-cyan-500' : 'from-purple-500 to-blue-500'} rounded-xl flex items-center justify-center`}>
                 <Wallet className="w-6 h-6 text-white" />
               </div>
-              <span className="text-xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                CampusSpend
+              <span className={`text-xl font-bold bg-gradient-to-r ${isEmp ? 'from-blue-600 to-cyan-600' : 'from-purple-600 to-blue-600'} bg-clip-text text-transparent`}>
+                {isEmp ? 'CampusSpend Pro' : 'CampusSpend'}
               </span>
             </div>
 
             <div className="hidden md:flex items-center gap-8">
               <a href="#features" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">Features</a>
-              <a href="#pricing" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">Pricing</a>
               <a href="#testimonials" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">Testimonials</a>
             </div>
 
             <div className="flex items-center gap-3">
+              {/* Mode Toggle */}
+              <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-full p-0.5">
+                <button
+                  onClick={() => updateLandingMode('student')}
+                  className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${!isEmp
+                    ? 'bg-purple-600 text-white shadow-sm'
+                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                    }`}
+                >
+                  <GraduationCap className="w-3.5 h-3.5" />
+                  Student
+                </button>
+                <button
+                  onClick={() => updateLandingMode('employee')}
+                  className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${isEmp
+                    ? 'bg-blue-600 text-white shadow-sm'
+                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                    }`}
+                >
+                  <Briefcase className="w-3.5 h-3.5" />
+                  Employee
+                </button>
+              </div>
+
               {/* Theme Toggle */}
               <button
                 onClick={() => setIsDark(!isDark)}
@@ -126,7 +187,7 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
               </Button>
               <Button
                 onClick={() => onNavigate('signup')}
-                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+                className={`bg-gradient-to-r ${isEmp ? 'from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700' : 'from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700'}`}
               >
                 Get Started
               </Button>
@@ -139,29 +200,31 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
       <section className="relative overflow-hidden py-20 lg:py-32">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-purple-100 dark:bg-purple-900/40 rounded-full mb-6">
-              <Sparkles className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-              <span className="text-sm text-purple-600 dark:text-purple-400">Made By Himakar Pisipati</span>
+            <div className={`inline-flex items-center gap-2 px-4 py-2 ${isEmp ? 'bg-blue-100 dark:bg-blue-900/40' : 'bg-purple-100 dark:bg-purple-900/40'} rounded-full mb-6`}>
+              <Sparkles className={`w-4 h-4 ${isEmp ? 'text-blue-600 dark:text-blue-400' : 'text-purple-600 dark:text-purple-400'}`} />
+              <span className={`text-sm ${isEmp ? 'text-blue-600 dark:text-blue-400' : 'text-purple-600 dark:text-purple-400'}`}>Made By Himakar Pisipati</span>
             </div>
 
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 dark:text-white mb-6">
-              Track every rupee.
+              {isEmp ? 'Manage your salary.' : 'Track every rupee.'}
               <br />
-              <span className="bg-gradient-to-r from-purple-600 via-blue-600 to-green-600 bg-clip-text text-transparent">
-                Save more as a student.
+              <span className={`bg-gradient-to-r ${isEmp ? 'from-blue-600 via-cyan-600 to-green-600' : 'from-purple-600 via-blue-600 to-green-600'} bg-clip-text text-transparent`}>
+                {isEmp ? 'Grow your wealth as a professional.' : 'Save more as a student.'}
               </span>
             </h1>
 
             <p className="text-xl text-gray-600 dark:text-gray-400 mb-10 max-w-2xl mx-auto">
-              The easiest way to manage your pocket money, hostel expenses, and student budget.
-              Start building better money habits today.
+              {isEmp
+                ? 'Track salary, deductions, EMIs, and investments. Take full control of your professional finances.'
+                : 'The easiest way to manage your pocket money, hostel expenses, and student budget. Start building better money habits today.'
+              }
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Button
                 size="lg"
                 onClick={() => onNavigate('dashboard')}
-                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-lg px-8 h-14"
+                className={`bg-gradient-to-r ${isEmp ? 'from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700' : 'from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700'} text-lg px-8 h-14`}
               >
                 Try Demo
                 <ArrowRight className="w-5 h-5 ml-2" />
@@ -186,15 +249,15 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
                 <span>Secure & Private</span>
               </div>
               <div className="flex items-center gap-2">
-                <Target className="w-5 h-5 text-purple-500" />
-                <span>Student Focused</span>
+                <Target className={`w-5 h-5 ${isEmp ? 'text-blue-500' : 'text-purple-500'}`} />
+                <span>{isEmp ? 'Professional Grade' : 'Student Focused'}</span>
               </div>
             </div>
           </div>
         </div>
 
         {/* Decorative gradients */}
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-purple-300 dark:bg-purple-800 rounded-full mix-blend-multiply dark:mix-blend-screen filter blur-3xl opacity-20 animate-pulse"></div>
+        <div className={`absolute top-0 left-1/4 w-96 h-96 ${isEmp ? 'bg-blue-300 dark:bg-blue-800' : 'bg-purple-300 dark:bg-purple-800'} rounded-full mix-blend-multiply dark:mix-blend-screen filter blur-3xl opacity-20 animate-pulse`}></div>
         <div className="absolute top-0 right-1/4 w-96 h-96 bg-blue-300 dark:bg-blue-800 rounded-full mix-blend-multiply dark:mix-blend-screen filter blur-3xl opacity-20 animate-pulse delay-1000"></div>
       </section>
 
@@ -203,10 +266,13 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
-              Everything you need to manage money
+              {isEmp ? 'Tools built for working professionals' : 'Everything you need to manage money'}
             </h2>
             <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-              Powerful features designed specifically for student life and budgets
+              {isEmp
+                ? 'Powerful features to manage salary, taxes, EMIs, and investments'
+                : 'Powerful features designed specifically for student life and budgets'
+              }
             </p>
           </div>
 
@@ -230,14 +296,17 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
       </section>
 
       {/* Testimonials Section */}
-      <section id="testimonials" className="py-20 bg-gradient-to-br from-purple-50 to-blue-50 dark:from-gray-950 dark:to-gray-900 transition-colors">
+      <section id="testimonials" className={`py-20 bg-gradient-to-br ${isEmp ? 'from-blue-50 to-cyan-50' : 'from-purple-50 to-blue-50'} dark:from-gray-950 dark:to-gray-900 transition-colors`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
-              Loved by students across India
+              {isEmp ? 'Trusted by professionals everywhere' : 'Loved by students across India'}
             </h2>
             <p className="text-lg text-gray-600 dark:text-gray-400">
-              Join thousands of students who are taking control of their finances
+              {isEmp
+                ? 'Join thousands of professionals managing their finances smarter'
+                : 'Join thousands of students who are taking control of their finances'
+              }
             </p>
           </div>
 
@@ -266,19 +335,22 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-r from-purple-600 to-blue-600 text-white">
+      <section className={`py-20 bg-gradient-to-r ${isEmp ? 'from-blue-600 to-cyan-600' : 'from-purple-600 to-blue-600'} text-white`}>
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl lg:text-4xl font-bold mb-6">
-            Ready to take control of your money?
+            {isEmp ? 'Ready to master your professional finances?' : 'Ready to take control of your money?'}
           </h2>
-          <p className="text-xl mb-10 text-purple-100">
-            Join CampusSpend today and start your journey to smarter spending
+          <p className={`text-xl mb-10 ${isEmp ? 'text-blue-100' : 'text-purple-100'}`}>
+            {isEmp
+              ? 'Join CampusSpend Pro and track salary, EMIs, and investments'
+              : 'Join CampusSpend today and start your journey to smarter spending'
+            }
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Button
               size="lg"
               onClick={() => onNavigate('signup')}
-              className="bg-white text-purple-600 hover:bg-gray-100 text-lg px-8 h-14"
+              className={`bg-white ${isEmp ? 'text-blue-600' : 'text-purple-600'} hover:bg-gray-100 text-lg px-8 h-14`}
             >
               Get Started Free
             </Button>
@@ -299,13 +371,13 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
           <div className="grid md:grid-cols-4 gap-8 mb-8">
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-blue-500 rounded-lg flex items-center justify-center">
+                <div className={`w-8 h-8 bg-gradient-to-br ${isEmp ? 'from-blue-500 to-cyan-500' : 'from-purple-500 to-blue-500'} rounded-lg flex items-center justify-center`}>
                   <Wallet className="w-5 h-5 text-white" />
                 </div>
-                <span className="font-bold text-white">CampusSpend</span>
+                <span className="font-bold text-white">{isEmp ? 'CampusSpend Pro' : 'CampusSpend'}</span>
               </div>
               <p className="text-sm">
-                Making money management simple for students everywhere.
+                {isEmp ? 'Smart financial management for working professionals.' : 'Making money management simple for students everywhere.'}
               </p>
             </div>
 
@@ -313,7 +385,6 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
               <h3 className="font-semibold text-white mb-4">Product</h3>
               <ul className="space-y-2 text-sm">
                 <li><a href="#features" className="hover:text-white transition-colors">Features</a></li>
-                <li><a href="#pricing" className="hover:text-white transition-colors">Pricing</a></li>
                 <li><a href="#" className="hover:text-white transition-colors">Mobile App</a></li>
               </ul>
             </div>

@@ -16,6 +16,7 @@ export const deleteAccount = (data) => API.delete("/auth/delete-account", { data
 export const updateProfile = (data) => API.put("/auth/update-profile", data);
 // Add this to your exports:
 export const getUserProfile = () => API.get("/auth/me");
+export const switchMode = (data) => API.post("/auth/switch-mode", data);
 // Note: Axios requires body data for DELETE requests to be wrapped in { data: ... }
 
 // ✅ ALIASES (Backwards Compatibility)
@@ -57,3 +58,11 @@ export const getDues = () => API.get("/dues");
 export const addDue = (data) => API.post("/dues", data);
 export const updateDue = (id, data) => API.put(`/dues/${id}`, data);
 export const deleteDue = (id) => API.delete(`/dues/${id}`);
+
+// ==============================
+// 💼 SALARY (Employee Mode)
+// ==============================
+export const getSalaries = () => API.get("/salary");
+export const addSalary = (data) => API.post("/salary", data);
+export const updateSalary = (id, data) => API.put(`/salary/${id}`, data);
+export const deleteSalary = (id) => API.delete(`/salary/${id}`);

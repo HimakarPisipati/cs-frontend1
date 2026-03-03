@@ -4,28 +4,50 @@ import { Card } from "./ui/card";
 import { Badge } from "./ui/badge";
 import {
   LayoutDashboard, Receipt, Wallet, Target, BarChart3, Settings,
-  Bell, TrendingUp, TrendingDown, HandCoins,
-  ChevronRight, Menu, X, Smartphone, CreditCard, Banknote
+  Bell, TrendingUp, TrendingDown, HandCoins, Briefcase,
+  ChevronRight, Menu, X, Smartphone, CreditCard, Banknote, DollarSign
 } from "lucide-react";
 import { getCategoryIcon, getCategoryColor } from "../data/mockData";
 import { PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 // ✅ Import Both Services
-import { getTransactions, getBudgets, getDues } from "../../api/services";
+import { getTransactions, getBudgets, getDues, getSalaries } from "../../api/services";
 
 interface DashboardProps {
   onNavigate: (page: string) => void;
   currentPage: string;
+  userMode?: string;
   children?: React.ReactNode;
 }
 
-export function Dashboard({ onNavigate, currentPage, children }: DashboardProps) {
+export function Dashboard({ onNavigate, currentPage, userMode = 'student', children }: DashboardProps) {
+  const isEmployee = userMode === 'employee';
+
+  // Theme colors based on mode
+  const theme = isEmployee
+    ? {
+      gradient: 'from-blue-500 to-cyan-500',
+      gradientHover: 'from-blue-600 to-cyan-600',
+      sidebarActive: 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg',
+      textGradient: 'from-blue-600 to-cyan-600',
+      bgGradient: 'from-blue-50 via-cyan-50 to-teal-50',
+      label: 'CampusSpend Pro',
+    }
+    : {
+      gradient: 'from-purple-500 to-blue-500',
+      gradientHover: 'from-purple-600 to-blue-600',
+      sidebarActive: 'bg-gradient-to-r from-purple-500 to-blue-500 text-white shadow-lg',
+      textGradient: 'from-purple-600 to-blue-600',
+      bgGradient: 'from-purple-50 via-blue-50 to-green-50',
+      label: 'CampusSpend',
+    };
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // ✅ State for Real Data
   const [transactions, setTransactions] = useState<any[]>([]);
   const [totalBudget, setTotalBudget] = useState(0);
   const [duesData, setDuesData] = useState<any[]>([]);
+  const [salaryData, setSalaryData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   // ✅ Fetch Transactions AND Budgets
@@ -54,6 +76,15 @@ export function Dashboard({ onNavigate, currentPage, children }: DashboardProps)
             const duesRes = await getDues();
             setDuesData(Array.isArray(duesRes.data) ? duesRes.data : []);
           } catch { setDuesData([]); }
+
+          // 4. Fetch Salary (Employee Mode)
+          if (isEmployee) {
+            try {
+              const salaryRes = await getSalaries();
+              const entries = Array.isArray(salaryRes.data) ? salaryRes.data : [];
+              if (entries.length > 0) setSalaryData(entries[0]);
+            } catch { setSalaryData(null); }
+          }
 
         } catch (error) {
           console.error("Failed to load dashboard data", error);
@@ -148,32 +179,45 @@ export function Dashboard({ onNavigate, currentPage, children }: DashboardProps)
   const budgetRemaining = totalBudget - monthlySpent;
   const budgetProgress = totalBudget > 0 ? Math.min(Math.round((monthlySpent / totalBudget) * 100), 100) : 0;
 
-  const menuItems = [
+  const baseMenuItems = [
     { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { id: 'transactions', icon: Receipt, label: 'Transactions' },
     { id: 'budgets', icon: Wallet, label: 'Budgets' },
     { id: 'savings', icon: Target, label: 'Savings Goals' },
-    { id: 'dues', icon: HandCoins, label: 'Dues' },
+    { id: 'dues', icon: HandCoins, label: isEmployee ? 'EMI / Loans' : 'Dues' },
+  ];
+
+  const employeeOnlyItems = [
+    { id: 'salary', icon: Briefcase, label: 'Salary' },
+  ];
+
+  const menuItems = [
+    ...baseMenuItems,
+    ...(isEmployee ? employeeOnlyItems : []),
     { id: 'analytics', icon: BarChart3, label: 'Analytics' },
     { id: 'settings', icon: Settings, label: 'Settings' },
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-green-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-900 transition-colors duration-300">
+    <div className={`min-h-screen bg-gradient-to-br ${theme.bgGradient} dark:from-gray-900 dark:via-gray-900 dark:to-gray-900 transition-colors duration-300`}>
 
       {/* Sidebar - Desktop */}
       <aside className="hidden lg:block fixed left-0 top-0 h-screen w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 z-40 transition-colors duration-300">
-        <div className="p-6">
-          <div className="flex items-center gap-2 mb-8">
-            <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-blue-500 rounded-xl flex items-center justify-center">
-              <Wallet className="w-6 h-6 text-white" />
+        <div className="flex flex-col h-full">
+          {/* Logo */}
+          <div className="p-6 pb-2">
+            <div className="flex items-center gap-2 mb-4">
+              <div className={`w-10 h-10 bg-gradient-to-br ${theme.gradient} rounded-xl flex items-center justify-center`}>
+                <Wallet className="w-6 h-6 text-white" />
+              </div>
+              <span className={`text-xl font-bold bg-gradient-to-r ${theme.textGradient} bg-clip-text text-transparent`}>
+                {theme.label}
+              </span>
             </div>
-            <span className="text-xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-              CampusSpend
-            </span>
           </div>
 
-          <nav className="space-y-2">
+          {/* Scrollable Nav */}
+          <nav className="flex-1 overflow-y-auto px-6 space-y-2 scrollbar-hide">
             {menuItems.map((item) => {
               const Icon = item.icon;
               const isActive = currentPage === item.id;
@@ -182,7 +226,7 @@ export function Dashboard({ onNavigate, currentPage, children }: DashboardProps)
                   key={item.id}
                   onClick={() => onNavigate(item.id)}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActive
-                    ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white shadow-lg'
+                    ? theme.sidebarActive
                     : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
                     }`}
                 >
@@ -192,20 +236,21 @@ export function Dashboard({ onNavigate, currentPage, children }: DashboardProps)
               );
             })}
           </nav>
-        </div>
 
-        <div className="absolute bottom-6 left-6 right-6">
-          <Button
-            variant="outline"
-            onClick={() => {
-              localStorage.removeItem("token");
-              localStorage.removeItem("user");
-              onNavigate('login');
-            }}
-            className="w-full dark:bg-gray-700 dark:text-white dark:border-gray-600 dark:hover:bg-gray-600"
-          >
-            Logout
-          </Button>
+          {/* Logout - pinned at bottom */}
+          <div className="p-6 pt-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                localStorage.removeItem("token");
+                localStorage.removeItem("user");
+                onNavigate('login');
+              }}
+              className="w-full dark:bg-gray-700 dark:text-white dark:border-gray-600 dark:hover:bg-gray-600"
+            >
+              Logout
+            </Button>
+          </div>
         </div>
       </aside>
 
@@ -276,10 +321,10 @@ export function Dashboard({ onNavigate, currentPage, children }: DashboardProps)
           <main className="p-4 lg:p-8 pb-24 lg:pb-8">
             {/* Balance Cards */}
             <div className="grid md:grid-cols-3 gap-6 mb-8">
-              <Card className="p-6 bg-gradient-to-br from-purple-500 to-blue-500 text-white border-0 shadow-xl">
+              <Card className={`p-6 bg-gradient-to-br ${theme.gradient} text-white border-0 shadow-xl`}>
                 <div className="flex items-start justify-between mb-4">
                   <div>
-                    <p className="text-purple-100 text-sm">Current Balance</p>
+                    <p className="text-white/70 text-sm">Current Balance</p>
                     <h2 className="text-3xl font-bold mt-2">
                       {loading ? "..." : `₹${balance.toLocaleString()}`}
                     </h2>
@@ -353,8 +398,8 @@ export function Dashboard({ onNavigate, currentPage, children }: DashboardProps)
                   </div>
                   <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-700/50 border border-gray-100 dark:border-gray-600">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-bold text-purple-500 uppercase">Card</span>
-                      <CreditCard className="w-5 h-5 text-purple-500" />
+                      <span className={`text-xs font-bold uppercase ${isEmployee ? 'text-cyan-500' : 'text-purple-500'}`}>Card</span>
+                      <CreditCard className={`w-5 h-5 ${isEmployee ? 'text-cyan-500' : 'text-purple-500'}`} />
                     </div>
                     <p className="text-xl font-bold text-gray-900 dark:text-white">₹{spendByPayment.card.toLocaleString()}</p>
                   </div>
@@ -365,13 +410,13 @@ export function Dashboard({ onNavigate, currentPage, children }: DashboardProps)
               <Card className="p-6 bg-white/80 dark:bg-gray-800 backdrop-blur-sm border-0 shadow-lg">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
-                    <HandCoins className="w-5 h-5 text-purple-500" />
-                    <h3 className="text-sm font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Pending Dues</h3>
+                    <HandCoins className={`w-5 h-5 ${isEmployee ? 'text-blue-500' : 'text-purple-500'}`} />
+                    <h3 className="text-sm font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">{isEmployee ? 'Active EMIs' : 'Pending Dues'}</h3>
                   </div>
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300"
+                    className={`${isEmployee ? 'text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300' : 'text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300'}`}
                     onClick={() => onNavigate('dues')}
                   >
                     View All
@@ -390,6 +435,58 @@ export function Dashboard({ onNavigate, currentPage, children }: DashboardProps)
                 </div>
               </Card>
             </div>
+
+            {/* Employee Mode: Salary & Tax Summary */}
+            {isEmployee && salaryData && (
+              <div className="grid lg:grid-cols-2 gap-6 mb-8">
+                <Card className="p-6 bg-white/80 dark:bg-gray-800 backdrop-blur-sm border-0 shadow-lg">
+                  <div className="flex items-center gap-2 mb-4">
+                    <DollarSign className="w-5 h-5 text-blue-500" />
+                    <h3 className="text-sm font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Salary Overview</h3>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="p-4 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800">
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Gross Salary</p>
+                      <p className="text-xl font-bold text-blue-600 dark:text-blue-400">₹{salaryData.grossSalary?.toLocaleString()}</p>
+                    </div>
+                    <div className="p-4 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-800">
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Net Salary</p>
+                      <p className="text-xl font-bold text-green-600 dark:text-green-400">₹{salaryData.netSalary?.toLocaleString()}</p>
+                    </div>
+                  </div>
+                </Card>
+
+                <Card className="p-6 bg-white/80 dark:bg-gray-800 backdrop-blur-sm border-0 shadow-lg">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <Briefcase className="w-5 h-5 text-blue-500" />
+                      <h3 className="text-sm font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Tax & Deductions</h3>
+                    </div>
+                    <Button variant="ghost" size="sm" className="text-blue-600 dark:text-blue-400" onClick={() => onNavigate('salary')}>
+                      View All <ChevronRight className="w-4 h-4 ml-1" />
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50 border border-gray-100 dark:border-gray-600">
+                      <p className="text-xs text-gray-500 dark:text-gray-400">PF</p>
+                      <p className="text-lg font-bold text-gray-900 dark:text-white">₹{salaryData.pf?.toLocaleString()}</p>
+                    </div>
+                    <div className="p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50 border border-gray-100 dark:border-gray-600">
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Tax</p>
+                      <p className="text-lg font-bold text-gray-900 dark:text-white">₹{salaryData.tax?.toLocaleString()}</p>
+                    </div>
+                    <div className="p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50 border border-gray-100 dark:border-gray-600">
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Insurance</p>
+                      <p className="text-lg font-bold text-gray-900 dark:text-white">₹{salaryData.insurance?.toLocaleString()}</p>
+                    </div>
+                    <div className="p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50 border border-gray-100 dark:border-gray-600">
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Other</p>
+                      <p className="text-lg font-bold text-gray-900 dark:text-white">₹{salaryData.otherDeductions?.toLocaleString()}</p>
+                    </div>
+                  </div>
+                </Card>
+              </div>
+            )}
 
             {/* Charts */}
             <div className="grid lg:grid-cols-2 gap-6 mb-8">
@@ -438,9 +535,9 @@ export function Dashboard({ onNavigate, currentPage, children }: DashboardProps)
                     <Line
                       type="monotone"
                       dataKey="amount"
-                      stroke="#8b5cf6"
+                      stroke={isEmployee ? '#3b82f6' : '#8b5cf6'}
                       strokeWidth={3}
-                      dot={{ fill: '#8b5cf6', r: 5 }}
+                      dot={{ fill: isEmployee ? '#3b82f6' : '#8b5cf6', r: 5 }}
                     />
                   </LineChart>
                 </ResponsiveContainer>

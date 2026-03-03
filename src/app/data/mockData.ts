@@ -23,7 +23,7 @@ export interface SavingsGoal {
   emoji: string;
 }
 
-export const categories = [
+export const studentCategories = [
   { name: 'Food', icon: '🍔', color: 'bg-orange-500' },
   { name: 'Transport', icon: '🚗', color: 'bg-blue-500' },
   { name: 'Shopping', icon: '🛍️', color: 'bg-pink-500' },
@@ -34,13 +34,36 @@ export const categories = [
   { name: 'Other', icon: '💰', color: 'bg-gray-500' },
 ];
 
+export const employeeCategories = [
+  { name: 'Food', icon: '🍔', color: 'bg-orange-500' },
+  { name: 'Commute', icon: '🚗', color: 'bg-blue-500' },
+  { name: 'Shopping', icon: '🛍️', color: 'bg-pink-500' },
+  { name: 'Rent / EMI', icon: '🏠', color: 'bg-purple-500' },
+  { name: 'Utilities', icon: '💡', color: 'bg-yellow-500' },
+  { name: 'Entertainment', icon: '🎮', color: 'bg-red-500' },
+  { name: 'Healthcare', icon: '💊', color: 'bg-teal-500' },
+  { name: 'Office Supplies', icon: '📎', color: 'bg-indigo-500' },
+  { name: 'Investments', icon: '📈', color: 'bg-green-500' },
+  { name: 'Subscriptions', icon: '📱', color: 'bg-cyan-500' },
+  { name: 'Other', icon: '💰', color: 'bg-gray-500' },
+];
+
+// Default export for backward compatibility
+export const categories = studentCategories;
+
+export const getCategories = (mode: string) => {
+  return mode === 'employee' ? employeeCategories : studentCategories;
+};
+
 export const getCategoryIcon = (categoryName: string): string => {
-  const category = categories.find(c => c.name === categoryName);
+  const allCats = [...studentCategories, ...employeeCategories];
+  const category = allCats.find(c => c.name === categoryName);
   return category?.icon || '💰';
 };
 
 export const getCategoryColor = (categoryName: string): string => {
-  const category = categories.find(c => c.name === categoryName);
+  const allCats = [...studentCategories, ...employeeCategories];
+  const category = allCats.find(c => c.name === categoryName);
   return category?.color || 'bg-gray-500';
 };
 
@@ -170,11 +193,11 @@ export const getCurrentBalance = () => {
 export const getCategorySpending = () => {
   const expenses = mockTransactions.filter(t => t.type === 'expense');
   const categoryTotals: { [key: string]: number } = {};
-  
+
   expenses.forEach(t => {
     categoryTotals[t.category] = (categoryTotals[t.category] || 0) + t.amount;
   });
-  
+
   return Object.entries(categoryTotals).map(([name, value]) => ({
     name,
     value,

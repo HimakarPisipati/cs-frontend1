@@ -3,7 +3,7 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Card } from "./ui/card";
-import { Wallet, Mail, Lock, User, ArrowLeft, ShieldCheck } from "lucide-react";
+import { Wallet, Mail, Lock, User, ArrowLeft, ShieldCheck, GraduationCap, Briefcase } from "lucide-react";
 
 // ✅ import your signup + OTP API services
 import { signup, verifyOtp, resendOtp } from "../../api/services";
@@ -14,10 +14,22 @@ interface SignupPageProps {
 }
 
 export function SignupPage({ onNavigate }: SignupPageProps) {
+  const landingMode = (localStorage.getItem('landingMode') || 'student') as 'student' | 'employee';
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [userMode, setUserMode] = useState<"student" | "employee">(landingMode);
   const [loading, setLoading] = useState(false);
+
+  const isEmp = userMode === 'employee';
+  const gradient = isEmp ? 'from-blue-600 to-cyan-600' : 'from-purple-600 to-blue-600';
+  const gradientHover = isEmp ? 'hover:from-blue-700 hover:to-cyan-700' : 'hover:from-purple-700 hover:to-blue-700';
+  const iconGradient = isEmp ? 'from-blue-500 to-cyan-500' : 'from-purple-500 to-blue-500';
+  const accentText = isEmp ? 'text-blue-600 dark:text-blue-400' : 'text-purple-600 dark:text-purple-400';
+  const accentHover = isEmp ? 'hover:text-blue-700 dark:hover:text-blue-300' : 'hover:text-purple-700 dark:hover:text-purple-300';
+  const focusRing = isEmp ? 'focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800' : 'focus:border-purple-500 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-800';
+  const brandName = isEmp ? 'CampusSpend Pro' : 'CampusSpend';
+  const bgGradient = isEmp ? 'from-blue-50 via-cyan-50 to-green-50' : 'from-purple-50 via-blue-50 to-green-50';
 
   // OTP State
   const [showOtp, setShowOtp] = useState(false);
@@ -38,7 +50,7 @@ export function SignupPage({ onNavigate }: SignupPageProps) {
     setLoading(true);
 
     try {
-      const res = await signup({ name, email, password });
+      const res = await signup({ name, email, password, user_mode: userMode });
 
       if (res.data.requiresVerification) {
         // OTP was sent — show verification screen
@@ -47,6 +59,7 @@ export function SignupPage({ onNavigate }: SignupPageProps) {
       } else if (res.data.token) {
         // Email confirmation disabled — log in directly
         localStorage.setItem("token", res.data.token);
+        localStorage.setItem("userMode", res.data.userMode || userMode);
         localStorage.setItem("user", JSON.stringify({
           _id: res.data._id,
           name: res.data.name,
@@ -112,6 +125,7 @@ export function SignupPage({ onNavigate }: SignupPageProps) {
       }
 
       localStorage.setItem("token", res.data.token);
+      localStorage.setItem("userMode", res.data.userMode || userMode);
       localStorage.setItem("user", JSON.stringify({
         _id: res.data._id,
         name: res.data.name,
@@ -147,18 +161,18 @@ export function SignupPage({ onNavigate }: SignupPageProps) {
   // ==========================================
   if (showOtp) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-green-50 dark:from-gray-900 dark:via-gray-950 dark:to-gray-900 flex items-center justify-center p-4 transition-colors">
+      <div className={`min-h-screen bg-gradient-to-br ${bgGradient} dark:from-gray-900 dark:via-gray-950 dark:to-gray-900 flex items-center justify-center p-4 transition-colors`}>
         <Card className="w-full max-w-md p-8 lg:p-12 bg-white/80 dark:bg-gray-800/90 backdrop-blur-lg border-0 shadow-2xl">
           {/* Header */}
           <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-blue-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <div className={`w-16 h-16 bg-gradient-to-br ${iconGradient} rounded-2xl flex items-center justify-center mx-auto mb-4`}>
               <ShieldCheck className="w-8 h-8 text-white" />
             </div>
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Verify your email</h2>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
               We sent a 6-digit code to
             </p>
-            <p className="text-sm font-semibold text-purple-600 dark:text-purple-400">{email}</p>
+            <p className={`text-sm font-semibold ${accentText}`}>{email}</p>
           </div>
 
           {/* OTP Input */}
@@ -173,9 +187,9 @@ export function SignupPage({ onNavigate }: SignupPageProps) {
                 value={digit}
                 onChange={(e) => handleOtpChange(index, e.target.value)}
                 onKeyDown={(e) => handleOtpKeyDown(index, e)}
-                className="w-12 h-14 text-center text-xl font-bold border-2 border-gray-200 dark:border-gray-600 rounded-xl 
-                  focus:border-purple-500 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-800 outline-none transition-all
-                  bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white hover:bg-white dark:hover:bg-gray-600"
+                className={`w-12 h-14 text-center text-xl font-bold border-2 border-gray-200 dark:border-gray-600 rounded-xl 
+                  ${focusRing} outline-none transition-all
+                  bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white hover:bg-white dark:hover:bg-gray-600`}
                 autoFocus={index === 0}
               />
             ))}
@@ -185,7 +199,7 @@ export function SignupPage({ onNavigate }: SignupPageProps) {
           <Button
             onClick={handleVerifyOtp}
             disabled={loading || otp.join("").length !== 6}
-            className="w-full h-12 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 mb-4"
+            className={`w-full h-12 bg-gradient-to-r ${gradient} ${gradientHover} mb-4`}
           >
             {loading ? "Verifying..." : "Verify & Create Account"}
           </Button>
@@ -201,7 +215,7 @@ export function SignupPage({ onNavigate }: SignupPageProps) {
               ) : (
                 <button
                   onClick={handleResendOtp}
-                  className="text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 font-semibold"
+                  className={`${accentText} ${accentHover} font-semibold`}
                 >
                   Resend OTP
                 </button>
@@ -228,7 +242,7 @@ export function SignupPage({ onNavigate }: SignupPageProps) {
   // ==========================================
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-green-50 dark:from-gray-900 dark:via-gray-950 dark:to-gray-900 flex items-center justify-center p-4 transition-colors">
-      <div className="w-full max-w-6xl grid lg:grid-cols-2 gap-8 items-center">
+      <div className="w-full max-w-6xl grid lg:grid-cols-2 gap-8 items-start">
         {/* Left Side - Illustration & Info */}
         <div className="hidden lg:block">
           <div className="mb-8">
@@ -242,12 +256,12 @@ export function SignupPage({ onNavigate }: SignupPageProps) {
             </Button>
             <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
               Start your journey with
-              <span className="block bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                CampusSpend
+              <span className={`block bg-gradient-to-r ${gradient} bg-clip-text text-transparent`}>
+                {brandName}
               </span>
             </h1>
             <p className="text-lg text-gray-600 dark:text-gray-400 mb-8">
-              Join thousands of students taking control of their finances.
+              {isEmp ? 'Join professionals taking control of their finances.' : 'Join thousands of students taking control of their finances.'}
             </p>
           </div>
 
@@ -275,7 +289,7 @@ export function SignupPage({ onNavigate }: SignupPageProps) {
           </div>
 
           <div className="flex items-center gap-3 mb-8">
-            <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-blue-500 rounded-xl flex items-center justify-center">
+            <div className={`w-12 h-12 bg-gradient-to-br ${iconGradient} rounded-xl flex items-center justify-center`}>
               <Wallet className="w-7 h-7 text-white" />
             </div>
             <div>
@@ -312,7 +326,7 @@ export function SignupPage({ onNavigate }: SignupPageProps) {
                 <Input
                   id="email"
                   type="email"
-                  placeholder="student@college.edu"
+                  placeholder={isEmp ? 'name@company.com' : 'student@college.edu'}
                   className="pl-10 h-12 dark:bg-gray-700 dark:text-white dark:border-gray-600"
                   required
                   value={email}
@@ -338,15 +352,45 @@ export function SignupPage({ onNavigate }: SignupPageProps) {
               </div>
             </div>
 
+            {/* Mode Selection */}
+            <div className="space-y-2">
+              <Label className="dark:text-gray-300">I am a</Label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setUserMode("student")}
+                  className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${userMode === "student"
+                    ? "border-purple-500 bg-purple-50 dark:bg-purple-900/30"
+                    : "border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500"
+                    }`}
+                >
+                  <GraduationCap className={`w-7 h-7 ${userMode === "student" ? "text-purple-600 dark:text-purple-400" : "text-gray-400"}`} />
+                  <span className={`text-sm font-semibold ${userMode === "student" ? "text-purple-700 dark:text-purple-300" : "text-gray-500 dark:text-gray-400"}`}>Student</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setUserMode("employee")}
+                  className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${userMode === "employee"
+                    ? "border-blue-500 bg-blue-50 dark:bg-blue-900/30"
+                    : "border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500"
+                    }`}
+                >
+                  <Briefcase className={`w-7 h-7 ${userMode === "employee" ? "text-blue-600 dark:text-blue-400" : "text-gray-400"}`} />
+                  <span className={`text-sm font-semibold ${userMode === "employee" ? "text-blue-700 dark:text-blue-300" : "text-gray-500 dark:text-gray-400"}`}>Employee</span>
+                </button>
+              </div>
+              <p className="text-xs text-gray-400 dark:text-gray-500">You can change this later in Settings</p>
+            </div>
+
             <div className="flex items-start gap-2">
               <input type="checkbox" id="terms" className="mt-1" required />
               <label htmlFor="terms" className="text-sm text-gray-600 dark:text-gray-400">
                 I agree to the{" "}
-                <a href="#" className="text-purple-600 dark:text-purple-400 hover:text-purple-700">
+                <a href="#" className={`${accentText} ${accentHover}`}>
                   Terms of Service
                 </a>{" "}
                 and{" "}
-                <a href="#" className="text-purple-600 dark:text-purple-400 hover:text-purple-700">
+                <a href="#" className={`${accentText} ${accentHover}`}>
                   Privacy Policy
                 </a>
               </label>
@@ -355,7 +399,7 @@ export function SignupPage({ onNavigate }: SignupPageProps) {
             <Button
               type="submit"
               disabled={loading}
-              className="w-full h-12 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+              className={`w-full h-12 bg-gradient-to-r ${gradient} ${gradientHover}`}
             >
               {loading ? "Creating Account..." : "Create Account"}
             </Button>

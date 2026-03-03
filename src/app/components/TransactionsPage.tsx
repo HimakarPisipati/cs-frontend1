@@ -16,7 +16,7 @@ import {
   Pencil
 } from "lucide-react";
 
-import { categories, getCategoryIcon, getCategoryColor } from "../data/mockData";
+import { categories, getCategoryIcon, getCategoryColor, getCategories } from "../data/mockData";
 
 // ✅ Import backend services (Ensure deleteTransaction is exported from here)
 import { addTransaction, getTransactions, deleteTransaction, updateTransaction } from "../../api/services";
@@ -36,7 +36,16 @@ type BackendTransaction = {
   updatedAt?: string;
 };
 
-export function TransactionsPage() {
+interface TransactionsPageProps {
+  userMode?: string;
+}
+
+export function TransactionsPage({ userMode = 'student' }: TransactionsPageProps) {
+  const activeCategories = getCategories(userMode);
+  const isEmployee = userMode === 'employee';
+  const gradient = isEmployee ? 'from-blue-600 to-cyan-600' : 'from-purple-600 to-blue-600';
+  const gradientHover = isEmployee ? 'hover:from-blue-700 hover:to-cyan-700' : 'hover:from-purple-700 hover:to-blue-700';
+  const paymentSelected = isEmployee ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30' : 'border-purple-500 bg-purple-50 dark:bg-purple-900/30';
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<BackendTransaction | null>(null);
   const [filterType, setFilterType] = useState<"all" | "expense" | "income">("all");
@@ -212,8 +221,8 @@ export function TransactionsPage() {
       head: [["Date", "Type", "Category", "Note", "Payment", "Amount"]],
       body: tableData,
       theme: "grid",
-      headStyles: { fillColor: [102, 51, 153], textColor: 255, fontStyle: "bold" },
-      alternateRowStyles: { fillColor: [245, 240, 255] },
+      headStyles: { fillColor: isEmployee ? [59, 130, 246] : [102, 51, 153], textColor: 255, fontStyle: "bold" },
+      alternateRowStyles: { fillColor: isEmployee ? [239, 246, 255] : [245, 240, 255] },
       styles: { fontSize: 9 },
     });
 
@@ -228,7 +237,7 @@ export function TransactionsPage() {
           <Button
             variant={filterType === "all" ? "default" : "outline"}
             onClick={() => setFilterType("all")}
-            className={filterType === "all" ? "bg-gradient-to-r from-purple-600 to-blue-600" : ""}
+            className={filterType === "all" ? `bg-gradient-to-r ${gradient}` : ""}
           >
             All
           </Button>
@@ -255,7 +264,7 @@ export function TransactionsPage() {
           </Button>
           <Button
             onClick={() => setShowAddModal(true)}
-            className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+            className={`bg-gradient-to-r ${gradient} ${gradientHover}`}
           >
             <Plus className="w-4 h-4 mr-2" />
             Add Transaction
@@ -286,7 +295,7 @@ export function TransactionsPage() {
               className="w-full mt-2 h-10 px-3 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 dark:text-gray-200"
             >
               <option value="all">All Categories</option>
-              {categories.map((cat) => (
+              {activeCategories.map((cat) => (
                 <option key={cat.name} value={cat.name}>
                   {cat.icon} {cat.name}
                 </option>
@@ -457,13 +466,13 @@ export function TransactionsPage() {
               <div>
                 <Label className="mb-3 block">Category</Label>
                 <div className="grid grid-cols-4 gap-3">
-                  {categories.map((cat) => (
+                  {activeCategories.map((cat) => (
                     <button
                       key={cat.name}
                       type="button"
                       onClick={() => setCategory(cat.name)}
                       className={`p-4 rounded-xl border-2 transition-all ${category === cat.name
-                        ? "border-purple-500 bg-purple-50 dark:bg-purple-900/30"
+                        ? paymentSelected
                         : "border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500"
                         }`}
                     >
@@ -482,7 +491,7 @@ export function TransactionsPage() {
                     type="button"
                     onClick={() => setPaymentMethod("Cash")}
                     className={`p-4 rounded-xl border-2 transition-all ${paymentMethod === "Cash"
-                      ? "border-purple-500 bg-purple-50 dark:bg-purple-900/30"
+                      ? paymentSelected
                       : "border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500"
                       }`}
                   >
@@ -493,7 +502,7 @@ export function TransactionsPage() {
                     type="button"
                     onClick={() => setPaymentMethod("UPI")}
                     className={`p-4 rounded-xl border-2 transition-all ${paymentMethod === "UPI"
-                      ? "border-purple-500 bg-purple-50 dark:bg-purple-900/30"
+                      ? paymentSelected
                       : "border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500"
                       }`}
                   >
@@ -504,7 +513,7 @@ export function TransactionsPage() {
                     type="button"
                     onClick={() => setPaymentMethod("Card")}
                     className={`p-4 rounded-xl border-2 transition-all ${paymentMethod === "Card"
-                      ? "border-purple-500 bg-purple-50 dark:bg-purple-900/30"
+                      ? paymentSelected
                       : "border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500"
                       }`}
                   >

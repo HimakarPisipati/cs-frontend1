@@ -4,7 +4,7 @@ import { Card } from "./ui/card";
 import { Progress } from "./ui/progress";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import { 
+import {
   Target,
   Plus,
   TrendingUp,
@@ -16,14 +16,32 @@ import {
 // Import services
 import { getSavingsGoals, addSavingsGoal, updateSavingsGoal, deleteSavingsGoal } from "../../api/services";
 
-export function SavingsPage() {
+interface SavingsPageProps {
+  userMode?: string;
+}
+
+export function SavingsPage({ userMode = 'student' }: SavingsPageProps) {
+  const isEmployee = userMode === 'employee';
+  const accentGradient = isEmployee ? 'from-blue-600 to-cyan-600' : 'from-purple-600 to-blue-600';
+  const accentBg = isEmployee ? 'bg-blue-100 dark:bg-blue-900' : 'bg-purple-100 dark:bg-purple-900';
+  const accentBorder = isEmployee ? 'border-blue-300 dark:border-blue-700' : 'border-purple-300 dark:border-purple-700';
+  const motivBg = isEmployee
+    ? 'from-blue-100 to-cyan-100 dark:from-blue-900/30 dark:to-cyan-900/30 border-blue-200 dark:border-blue-800'
+    : 'from-purple-100 to-blue-100 dark:from-purple-900/30 dark:to-blue-900/30 border-purple-200 dark:border-purple-800';
+  const motivText = isEmployee ? 'text-blue-900 dark:text-blue-200' : 'text-purple-900 dark:text-purple-200';
+  const newGoalHover = isEmployee
+    ? 'hover:border-blue-500 dark:hover:border-blue-500 hover:bg-blue-50/50 dark:hover:bg-blue-900/20'
+    : 'hover:border-purple-500 dark:hover:border-purple-500 hover:bg-purple-50/50 dark:hover:bg-purple-900/20';
+  const newGoalIconBg = isEmployee ? 'bg-blue-100 dark:bg-blue-900/30' : 'bg-purple-100 dark:bg-purple-900/30';
+  const newGoalIconColor = isEmployee ? 'text-blue-600 dark:text-blue-400' : 'text-purple-600 dark:text-purple-400';
+
   const [goals, setGoals] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Modals
   const [showAddModal, setShowAddModal] = useState(false);
   const [showContributeModal, setShowContributeModal] = useState<string | null>(null);
-  
+
   // Forms
   const [contributeAmount, setContributeAmount] = useState('');
   const [newName, setNewName] = useState("");
@@ -59,7 +77,7 @@ export function SavingsPage() {
         await updateSavingsGoal(goalId, { currentAmount: newAmount });
         setContributeAmount('');
         setShowContributeModal(null);
-        loadGoals(); 
+        loadGoals();
       } catch (error) {
         alert("Failed to update savings goal");
       }
@@ -114,16 +132,16 @@ export function SavingsPage() {
             <Target className="w-8 h-8" />
           </div>
         </div>
-        
+
         <div className="flex items-center gap-2 text-sm">
           <TrendingUp className="w-4 h-4" />
-          <span>Keep going! You're {totalTarget > 0 ? Math.round((totalSaved/totalTarget)*100) : 0}% there</span>
+          <span>Keep going! You're {totalTarget > 0 ? Math.round((totalSaved / totalTarget) * 100) : 0}% there</span>
         </div>
       </Card>
 
       {/* Motivational Message */}
-      <Card className="p-4 bg-gradient-to-r from-purple-100 to-blue-100 dark:from-purple-900/30 dark:to-blue-900/30 border-purple-200 dark:border-purple-800">
-        <p className="text-center text-purple-900 dark:text-purple-200 font-medium">
+      <Card className={`p-4 bg-gradient-to-r ${motivBg}`}>
+        <p className={`text-center ${motivText} font-medium`}>
           💪 Great job saving! Every rupee counts towards your dreams ✨
         </p>
       </Card>
@@ -131,18 +149,17 @@ export function SavingsPage() {
       {/* Savings Goals Grid */}
       <div className="grid md:grid-cols-2 gap-6">
         {loading ? (
-           <p className="text-gray-500 dark:text-gray-400 col-span-2 text-center py-8">Loading goals...</p>
+          <p className="text-gray-500 dark:text-gray-400 col-span-2 text-center py-8">Loading goals...</p>
         ) : goals.map((goal) => {
           const current = Number(goal.currentAmount) || 0;
-          const target = Number(goal.targetAmount) || 1; 
+          const target = Number(goal.targetAmount) || 1;
           const percentage = Math.min((current / target) * 100, 100);
           const remaining = Math.max(target - current, 0);
-          
+
           return (
-            // 🌙 Added Dark Mode classes here
             <Card key={goal._id || goal.id} className="p-6 bg-white/80 dark:bg-gray-800 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl transition-all relative group dark:text-white">
-              
-              <button 
+
+              <button
                 onClick={() => handleDelete(goal._id || goal.id)}
                 className="absolute top-4 right-4 text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
               >
@@ -162,9 +179,8 @@ export function SavingsPage() {
               </div>
 
               <div className="space-y-3 mb-4">
-                {/* Progress Bar Background */}
-                <Progress 
-                  value={percentage} 
+                <Progress
+                  value={percentage}
                   className="h-3 bg-gray-100 dark:bg-gray-700 [&>div]:bg-gradient-to-r [&>div]:from-green-500 [&>div]:to-teal-500"
                 />
                 <div className="flex justify-between text-sm">
@@ -180,7 +196,7 @@ export function SavingsPage() {
                   <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
                     ₹{remaining.toLocaleString()} more to reach your goal! 🎯
                   </p>
-                  <Button 
+                  <Button
                     onClick={() => setShowContributeModal(goal._id || goal.id)}
                     className="w-full bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600 text-white"
                   >
@@ -199,13 +215,13 @@ export function SavingsPage() {
         })}
 
         {/* Add New Goal Card */}
-        <Card className="p-6 bg-white/60 dark:bg-gray-800/50 backdrop-blur-sm border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-purple-500 dark:hover:border-purple-500 hover:bg-purple-50/50 dark:hover:bg-purple-900/20 transition-all cursor-pointer">
-          <button 
+        <Card className={`p-6 bg-white/60 dark:bg-gray-800/50 backdrop-blur-sm border-2 border-dashed border-gray-300 dark:border-gray-600 ${newGoalHover} transition-all cursor-pointer`}>
+          <button
             onClick={() => setShowAddModal(true)}
             className="w-full h-full flex flex-col items-center justify-center gap-3 min-h-[200px]"
           >
-            <div className="w-16 h-16 bg-purple-100 dark:bg-purple-900/30 rounded-2xl flex items-center justify-center">
-              <Plus className="w-8 h-8 text-purple-600 dark:text-purple-400" />
+            <div className={`w-16 h-16 ${newGoalIconBg} rounded-2xl flex items-center justify-center`}>
+              <Plus className={`w-8 h-8 ${newGoalIconColor}`} />
             </div>
             <div className="text-center">
               <p className="font-semibold text-gray-900 dark:text-white">Create New Goal</p>
@@ -229,14 +245,14 @@ export function SavingsPage() {
             {(() => {
               const goal = goals.find(g => (g._id || g.id) === showContributeModal);
               if (!goal) return null;
-              
+
               return (
                 <div className="space-y-6">
                   <div className="text-center">
                     <div className="text-5xl mb-3">{goal.emoji}</div>
                     <h4 className="font-semibold text-lg">{goal.name}</h4>
                     <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                      Current: ₹{(Number(goal.currentAmount)||0).toLocaleString()} / ₹{(Number(goal.targetAmount)||0).toLocaleString()}
+                      Current: ₹{(Number(goal.currentAmount) || 0).toLocaleString()} / ₹{(Number(goal.targetAmount) || 0).toLocaleString()}
                     </p>
                   </div>
 
@@ -256,13 +272,13 @@ export function SavingsPage() {
                   </div>
 
                   <div className="flex gap-3">
-                    <Button 
+                    <Button
                       onClick={() => handleContribute(goal._id || goal.id)}
                       className="flex-1 bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600 text-white"
                     >
                       Add to Goal
                     </Button>
-                    <Button 
+                    <Button
                       variant="outline"
                       onClick={() => setShowContributeModal(null)}
                       className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
@@ -291,18 +307,18 @@ export function SavingsPage() {
             <div className="space-y-4">
               <div>
                 <Label className="dark:text-gray-300">Goal Name</Label>
-                <Input 
-                  placeholder="e.g., New Laptop" 
-                  className="mt-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white" 
+                <Input
+                  placeholder="e.g., New Laptop"
+                  className="mt-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
                 />
               </div>
               <div>
                 <Label className="dark:text-gray-300">Target Amount (₹)</Label>
-                <Input 
-                  type="number" 
-                  placeholder="0" 
+                <Input
+                  type="number"
+                  placeholder="0"
                   className="mt-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                   value={newTarget}
                   onChange={(e) => setNewTarget(e.target.value)}
@@ -316,20 +332,19 @@ export function SavingsPage() {
                       key={emoji}
                       type="button"
                       onClick={() => setNewEmoji(emoji)}
-                      className={`text-3xl p-2 rounded-lg transition-colors ${
-                        newEmoji === emoji 
-                          ? "bg-purple-100 dark:bg-purple-900 border border-purple-300 dark:border-purple-700" 
+                      className={`text-3xl p-2 rounded-lg transition-colors ${newEmoji === emoji
+                          ? `${accentBg} border ${accentBorder}`
                           : "hover:bg-gray-100 dark:hover:bg-gray-700"
-                      }`}
+                        }`}
                     >
                       {emoji}
                     </button>
                   ))}
                 </div>
               </div>
-              <Button 
+              <Button
                 onClick={handleCreateGoal}
-                className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white"
+                className={`w-full bg-gradient-to-r ${accentGradient} text-white`}
               >
                 Create Goal
               </Button>
